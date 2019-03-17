@@ -19,6 +19,7 @@
 #define TRUE 1
 #define FALSE 0
 
+#define notifyMsg "HAS JUST JOINED!"
 //some changes done by emilion
 
 enum PacketTypes
@@ -28,7 +29,8 @@ enum PacketTypes
     AuthenticationAccepted,
     AuthenticationDenied,
     BroadcastMessage,
-    UserAlreadyLoggedIn
+    UserAlreadyLoggedIn,
+    Notification
 };
 
 typedef struct _Client
@@ -335,19 +337,26 @@ void authenticateUser(Packet *packet)
             fclose(f);
             free(line);
             //*******notification packet
-            // if(clients != NULL)
-            // {
-            //     Packet *notifyPacket = (Packet *)malloc(sizeof(Packet));
-            //     notifyPacket->type = BroadcastMessage;
-            //     notifyPacket->client = packet->client;
-            //     notifyPacket->client->authenticated = TRUE;
-            //     memcpy(username, account, usernameLen);
-            //     username[usernameLen] = 0;
-            //     notifyPacket->client->name = username;
-            //     strcpy(notifyPacket->data,"IS NOW A NEW CONNECTION!");
-            //     notifyPacket->length = strlen(notifyPacket->client->name) + strlen(notifyPacket->data) + 1;
-            //     broadcastMessage(notifyPacket);
-            //    }
+            if(clients->next != NULL)
+            {
+                Packet *notifyPacket = (Packet *)malloc(sizeof(Packet));
+                notifyPacket->type = BroadcastMessage;
+                notifyPacket->client = packet->client;
+                notifyPacket->client->authenticated = TRUE;
+                memcpy(username, account, usernameLen);
+                username[usernameLen] = 0;
+                memcpy(notifyPacket->client->name, username, usernameLen);
+                notifyPacket->client->name[usernameLen] = 0;
+
+                notifyPacket->data =(char*)malloc(strlen(notifyMsg)+1);//sa-mi bag p*la in mallocul tau!!
+                strcpy(notifyPacket->data,notifyMsg);
+
+                notifyPacket->data[strlen(notifyMsg)] = 0;
+                notifyPacket->length = strlen(notifyPacket->client->name) + strlen(notifyPacket->data) + 1;
+                notifyPacket->type = Notification;
+                broadcastMessage(notifyPacket);
+                //printf("\n\b\b %s: %s\n\n", notifyPacket->client->name, notifyPacket->data);
+               }
             //**************************
 
             return;
@@ -375,7 +384,8 @@ void broadcastMessage(Packet *packet)
     memcpy(p->data + 1, packet->client->name, strlen(packet->client->name));
     memcpy(p->data + strlen(packet->client->name) + 1, packet->data, packet->length);
     packet->data[packet->length] = 0;
-    printf("[%s] %s: %s\n", currentTime(), packet->client->name, packet->data);
+    if(Notification != packet->type)
+        printf("[%s] %s: %s\n", currentTime(), packet->client->name, packet->data);
     while (client != NULL)
     {
         if (client == packet->client)
