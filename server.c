@@ -19,6 +19,8 @@
 #define TRUE 1
 #define FALSE 0
 
+//some changes done by emilion
+
 enum PacketTypes
 {
     Authenticate,
