@@ -30,7 +30,7 @@ enum PacketTypes
     AuthenticationDenied,
     BroadcastMessage,
     UserAlreadyLoggedIn,
-    Notification
+    UserJoined
 };
 
 typedef struct _Client
@@ -65,6 +65,7 @@ int serverPort = SERVER_PORT;
 
 void broadcastMessage(Packet *packet);
 void processPacket(Packet *packet);
+void notifyJoined(Client *client);
 
 void err(const char *fmt, ...)
 {
@@ -292,7 +293,8 @@ void authenticateUser(Packet *packet)
     memcpy(account, packet->data + 2, usernameLen);
     account[usernameLen] = ':';
     memcpy(account + usernameLen + 1, packet->data + 2 + usernameLen, passwordLen);
-    account[usernameLen + 1 + passwordLen] = 0;
+    int accountLen = usernameLen + 1 + passwordLen;
+    account[accountLen] = 0;
     char *line = NULL;
     FILE *f = fopen("users.db", "r");
     size_t len;
@@ -317,11 +319,11 @@ void authenticateUser(Packet *packet)
         fclose(f);
         return;
     }
-    //*************************************
 
     while ((read = getline(&line, &len, f)) != -1)
     {
-        if (memcmp(line, account, usernameLen + 1 + passwordLen) == 0 && (usernameLen + 1 + passwordLen) == strlen(line) - 1)
+        int lineLen = line[strlen(line) - 1] == '\n' ? strlen(line) - 1 : strlen(line);
+        if (memcmp(line, account, accountLen) == 0 && (accountLen) == lineLen)
         {
             Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
             acceptPacket->type = AuthenticationAccepted;
@@ -336,30 +338,7 @@ void authenticateUser(Packet *packet)
             printf("[%s] User %s has connected to the server\n", currentTime(), username);
             fclose(f);
             free(line);
-            //*******notification packet
-            if(clients->next != NULL)
-            {
-                Packet *notifyPacket = (Packet *)malloc(sizeof(Packet));
-                notifyPacket->type = BroadcastMessage;
-                notifyPacket->client = packet->client;
-                notifyPacket->client->authenticated = TRUE;
-                memcpy(username, account, usernameLen);
-                username[usernameLen] = 0;
-                memcpy(notifyPacket->client->name, username, usernameLen);
-                notifyPacket->client->name[usernameLen] = 0;
-
-                notifyPacket->data =(char*)malloc(strlen(notifyMsg)+1);//sa-mi bag p*la in mallocul tau!!
-                strcpy(notifyPacket->data,notifyMsg);
-
-                notifyPacket->data[strlen(notifyMsg)] = 0;
-                notifyPacket->length = strlen(notifyPacket->client->name) + strlen(notifyPacket->data) + 1;
-                notifyPacket->type = Notification;
-                broadcastMessage(notifyPacket);
-                free(notifyPacket->data);
-                free(notifyPacket);
-               }
-            //**************************
-
+            notifyJoined(packet->client);
             return;
         }
     }
@@ -370,6 +349,31 @@ void authenticateUser(Packet *packet)
     sendPacket(acceptPacket);
     fclose(f);
     free(line);
+}
+
+void notifyJoined(Client *client)
+{
+    Client *c = clients;
+
+    while (c != NULL)
+    {
+        if (c == client)
+        {
+            c = c->next;
+            continue;
+        }
+
+        Packet *p = (Packet *)malloc(sizeof(Packet));
+        p->type = UserJoined;
+        p->data = (char *)malloc(strlen(client->name));
+        memcpy(p->data, client->name, strlen(client->name));
+        p->client = c;
+        p->length = strlen(client->name);
+        sendPacket(p);
+        free(p->data);
+        free(p);
+        c = c->next;
+    }
 }
 
 void broadcastMessage(Packet *packet)
@@ -385,8 +389,7 @@ void broadcastMessage(Packet *packet)
     memcpy(p->data + 1, packet->client->name, strlen(packet->client->name));
     memcpy(p->data + strlen(packet->client->name) + 1, packet->data, packet->length);
     packet->data[packet->length] = 0;
-    if(Notification != packet->type)
-        printf("[%s] %s: %s\n", currentTime(), packet->client->name, packet->data);
+    printf("[%s] %s: %s\n", currentTime(), packet->client->name, packet->data);
     while (client != NULL)
     {
         if (client == packet->client)

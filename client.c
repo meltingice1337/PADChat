@@ -30,7 +30,8 @@ enum PacketTypes
     AuthenticationAccepted,
     AuthenticationDenied,
     BroadcastMessage,
-    UserAlreadyLoggedIn
+    UserAlreadyLoggedIn,
+    UserJoined
 };
 
 typedef struct _Packet
@@ -171,6 +172,8 @@ void recvData()
                 printf("! User Already Logged In !\n");
                 authenticate();
                 break;
+            case UserJoined:
+                packet->type = UserJoined;
             default:
                 break;
             }
@@ -180,6 +183,10 @@ void recvData()
     if (packet->type == BroadcastMessage)
     {
         showMessage(packet);
+    }
+    else if (packet->type == UserJoined)
+    {
+        printf("\b\b[%s] %s has connected !\n", currentTime(), packet->data);
     }
 }
 
@@ -222,7 +229,7 @@ void setupIpAndPort()
 {
     size_t size = 256;
     char *line = (char *)malloc(size);
-    serverIp = (char *) malloc(17);
+    serverIp = (char *)malloc(17);
     serverIp = SERVER_IP;
     printf("Ip (default 127.0.0.1): ");
     getline(&line, &size, stdin);
@@ -276,7 +283,7 @@ int main()
             char buffer[1000];
             int rc = read(STDIN_FILENO, buffer, 1000);
             Packet *packet = (Packet *)malloc(sizeof(Packet));
-            if(rc == 1)
+            if (rc == 1)
                 continue;
             int msgLen = rc - 1;
             packet->data = (char *)malloc(msgLen);
