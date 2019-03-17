@@ -355,7 +355,8 @@ void authenticateUser(Packet *packet)
                 notifyPacket->length = strlen(notifyPacket->client->name) + strlen(notifyPacket->data) + 1;
                 notifyPacket->type = Notification;
                 broadcastMessage(notifyPacket);
-                //printf("\n\b\b %s: %s\n\n", notifyPacket->client->name, notifyPacket->data);
+                free(notifyPacket->data);
+                free(notifyPacket);
                }
             //**************************
 
