@@ -78,7 +78,7 @@ void err(const char *fmt, ...)
 char *currentTime()
 {
     time_t timer;
-    char *buffer = (char *)malloc(26);
+    char *buffer = (char *)malloc(27);
     struct tm *tm_info;
 
     time(&timer);
@@ -149,22 +149,23 @@ void buildSelectFD()
             max_sd = client->socket;
         client = client->next;
     }
+    free(client);
 }
 
 //********function that checks if client is already logged in**
 int isClientAlreadyLoggedIn(char *testName)
 {
-    if(clients == NULL) return FALSE;//if there are no clients then this is the first connection
+    if (clients == NULL)
+        return FALSE; //if there are no clients then this is the first connection
 
     Client *client = clients;
-    while(client->next != NULL)
+    while (client->next != NULL)
     {
-        if(strcmp(client->name, testName) == 0)
+        if (strcmp(client->name, testName) == 0)
             return TRUE;
         client = client->next;
     }
     return FALSE;
-    
 }
 
 //*************************************************************
@@ -274,7 +275,7 @@ void sendPacket(Packet *packet)
         perror("  send() failed");
         closeConnection(packet->client);
     }
-    free(packet);
+    free(data);
 }
 
 void authenticateUser(Packet *packet)
@@ -301,16 +302,16 @@ void authenticateUser(Packet *packet)
     char *name = malloc(usernameLen + 1);
     memcpy(name, account, usernameLen);
     name[usernameLen] = 0;
-    if(TRUE == isClientAlreadyLoggedIn(name))
-     {   
+    if (isClientAlreadyLoggedIn(name))
+    {
         printf("[%s] User %s has already connected to the server and is trying again!\n", currentTime(), name);
         free(name);
 
-        Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
-        acceptPacket->type = UserAlreadyLoggedIn;
-        acceptPacket->length = 0;
-        acceptPacket->client = packet->client;
-        sendPacket(acceptPacket);
+        Packet *alreadyLoggedPacket = (Packet *)malloc(sizeof(Packet));
+        alreadyLoggedPacket->type = UserAlreadyLoggedIn;
+        alreadyLoggedPacket->length = 0;
+        alreadyLoggedPacket->client = packet->client;
+        sendPacket(alreadyLoggedPacket);
         fclose(f);
         return;
     }
@@ -348,7 +349,7 @@ void authenticateUser(Packet *packet)
             //     broadcastMessage(notifyPacket);
             //    }
             //**************************
-            
+
             return;
         }
     }
@@ -382,13 +383,16 @@ void broadcastMessage(Packet *packet)
             client = client->next;
             continue;
         }
-        if(TRUE == client->authenticated)
+        if (client->authenticated)
         {
             p->client = client;
             sendPacket(p);
         }
         client = client->next;
     }
+    free(p);
+    free(p->data);
+    free(client);
 }
 
 void processPacket(Packet *packet)
@@ -461,8 +465,9 @@ void recvData(Client *client)
 
         firstRecv = FALSE;
     } while (TRUE);
-    if (packet->valid)
+    if (packet->valid && (client->authenticated || packet->type == Authenticate))
         processPacket(packet);
+    free(packet);
 }
 
 void setupPort()
@@ -474,11 +479,10 @@ void setupPort()
     if (strlen(line) > 1)
     {
         int port = strtol(line, NULL, 10);
-        if(port)
+        if (port)
         {
             serverPort = port;
         }
-        
     }
 }
 
