@@ -276,6 +276,8 @@ int main()
             char buffer[1000];
             int rc = read(STDIN_FILENO, buffer, 1000);
             Packet *packet = (Packet *)malloc(sizeof(Packet));
+            if(rc == 1)
+                continue;
             int msgLen = rc - 1;
             packet->data = (char *)malloc(msgLen);
             memcpy(packet->data, buffer, msgLen);
