@@ -401,7 +401,7 @@ void processPacket(Packet *packet)
     {
         authenticateUser(packet);
     }
-    else if (packet->type == SendMessage)
+    else if (packet->type == SendMessage && packet->data != NULL)
     {
         broadcastMessage(packet);
     }
