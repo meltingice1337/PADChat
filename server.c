@@ -61,6 +61,9 @@ struct timeval timeout;
 fd_set socks;
 int serverPort = SERVER_PORT;
 
+void broadcastMessage(Packet *packet);
+void processPacket(Packet *packet);
+
 void err(const char *fmt, ...)
 {
     va_list va;
@@ -330,10 +333,25 @@ void authenticateUser(Packet *packet)
             printf("[%s] User %s has connected to the server\n", currentTime(), username);
             fclose(f);
             free(line);
+            //*******notification packet
+            // if(clients != NULL)
+            // {
+            //     Packet *notifyPacket = (Packet *)malloc(sizeof(Packet));
+            //     notifyPacket->type = BroadcastMessage;
+            //     notifyPacket->client = packet->client;
+            //     notifyPacket->client->authenticated = TRUE;
+            //     memcpy(username, account, usernameLen);
+            //     username[usernameLen] = 0;
+            //     notifyPacket->client->name = username;
+            //     strcpy(notifyPacket->data,"IS NOW A NEW CONNECTION!");
+            //     notifyPacket->length = strlen(notifyPacket->client->name) + strlen(notifyPacket->data) + 1;
+            //     broadcastMessage(notifyPacket);
+            //    }
+            //**************************
+            
             return;
         }
     }
-
     Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
     acceptPacket->type = AuthenticationDenied;
     acceptPacket->length = 0;
@@ -364,8 +382,11 @@ void broadcastMessage(Packet *packet)
             client = client->next;
             continue;
         }
-        p->client = client;
-        sendPacket(p);
+        if(TRUE == client->authenticated)
+        {
+            p->client = client;
+            sendPacket(p);
+        }
         client = client->next;
     }
 }
