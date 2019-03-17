@@ -20,6 +20,9 @@ int listenSocket;
 fd_set socks;
 int isAuthenticated = FALSE;
 
+char *serverIp;
+int serverPort = SERVER_PORT;
+
 enum PacketTypes
 {
     Authenticate,
@@ -36,6 +39,8 @@ typedef struct _Packet
     int valid;
     char *data;
 } Packet;
+
+void authenticate();
 
 void err(const char *fmt, ...)
 {
@@ -63,7 +68,6 @@ char *currentTime()
 
 void connectToServer()
 {
-    int rc;
     listenSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (listenSocket < 0)
     {
@@ -73,15 +77,15 @@ void connectToServer()
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
-    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_addr.s_addr = inet_addr(serverIp);
+    server_addr.sin_port = htons(serverPort);
 
     if (connect(listenSocket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0)
     {
         err("Could not connect");
     }
 
-    printf("Connected to %s:%d.\n", SERVER_IP, SERVER_PORT);
+    printf("Connected to %s:%d.\n", serverIp, serverPort);
 }
 
 void buildSelectFD()
@@ -156,7 +160,7 @@ void recvData()
                 printf("! Authenticated !\n");
                 break;
             case AuthenticationDenied:
-                printf("! Wrong credentials \n");
+                printf("! Wrong credentials !\n");
                 authenticate();
                 break;
             case BroadcastMessage:
@@ -209,8 +213,33 @@ void authenticate()
     sendPacket(packet);
 }
 
+void setupIpAndPort()
+{
+    size_t size = 256;
+    char *line = (char *)malloc(size);
+    serverIp = (char *) malloc(17);
+    serverIp = SERVER_IP;
+    printf("Ip (default 127.0.0.1): ");
+    getline(&line, &size, stdin);
+    if (strlen(line) > 1)
+    {
+        serverIp = line;
+    }
+    printf("Port (default 12345): ");
+    getline(&line, &size, stdin);
+    if (strlen(line) > 1)
+    {
+        int port = strtol(line, NULL, 10);
+        if (port)
+        {
+            serverPort = port;
+        }
+    }
+}
+
 int main()
 {
+    setupIpAndPort();
     connectToServer();
     authenticate();
     for (;;)
