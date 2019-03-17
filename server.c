@@ -25,7 +25,8 @@ enum PacketTypes
     SendMessage,
     AuthenticationAccepted,
     AuthenticationDenied,
-    BroadcastMessage
+    BroadcastMessage,
+    UserAlreadyLoggedIn
 };
 
 typedef struct _Client
@@ -144,6 +145,24 @@ void buildSelectFD()
         client = client->next;
     }
 }
+
+//********function that checks if client is already logged in**
+int isClientAlreadyLoggedIn(char *testName)
+{
+    if(clients == NULL) return FALSE;//if there are no clients then this is the first connection
+
+    Client *client = clients;
+    while(client->next != NULL)
+    {
+        if(strcmp(client->name, testName) == 0)
+            return TRUE;
+        client = client->next;
+    }
+    return FALSE;
+    
+}
+
+//*************************************************************
 
 void acceptNewCLients()
 {
@@ -272,6 +291,26 @@ void authenticateUser(Packet *packet)
     int read;
     if (f == NULL)
         err("cannot open users.db");
+
+    //*************************************
+    char *name = malloc(usernameLen + 1);
+    memcpy(name, account, usernameLen);
+    name[usernameLen] = 0;
+    if(TRUE == isClientAlreadyLoggedIn(name))
+     {   
+        printf("[%s] User %s has already connected to the server and is trying again!\n", currentTime(), name);
+        free(name);
+
+        Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
+        acceptPacket->type = UserAlreadyLoggedIn;
+        acceptPacket->length = 0;
+        acceptPacket->client = packet->client;
+        sendPacket(acceptPacket);
+        fclose(f);
+        return;
+    }
+    //*************************************
+
     while ((read = getline(&line, &len, f)) != -1)
     {
         if (memcmp(line, account, usernameLen + 1 + passwordLen) == 0)

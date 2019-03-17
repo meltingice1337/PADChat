@@ -29,7 +29,8 @@ enum PacketTypes
     SendMessage,
     AuthenticationAccepted,
     AuthenticationDenied,
-    BroadcastMessage
+    BroadcastMessage,
+    UserAlreadyLoggedIn
 };
 
 typedef struct _Packet
@@ -165,6 +166,10 @@ void recvData()
                 break;
             case BroadcastMessage:
                 packet->type = BroadcastMessage;
+                break;
+            case UserAlreadyLoggedIn:
+                printf("! User Already Logged In !\n");
+                authenticate();
                 break;
             default:
                 break;
