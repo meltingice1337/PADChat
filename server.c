@@ -321,7 +321,7 @@ void authenticateUser(Packet *packet)
 
     while ((read = getline(&line, &len, f)) != -1)
     {
-        if (memcmp(line, account, usernameLen + 1 + passwordLen) == 0)
+        if (memcmp(line, account, usernameLen + 1 + passwordLen) == 0 && (usernameLen + 1 + passwordLen) == strlen(line) - 1)
         {
             Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
             acceptPacket->type = AuthenticationAccepted;
