@@ -123,6 +123,7 @@ void recvData()
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     packet->length = 0;
     packet->valid = TRUE;
+    packet->data = NULL;
     int firstRecv = TRUE;
     for (;;)
     {
