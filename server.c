@@ -315,6 +315,7 @@ void authenticateUser(Packet *packet)
         alreadyLoggedPacket->type = UserAlreadyLoggedIn;
         alreadyLoggedPacket->length = 0;
         alreadyLoggedPacket->client = packet->client;
+        alreadyLoggedPacket->data = NULL;
         sendPacket(alreadyLoggedPacket);
         fclose(f);
         return;
@@ -328,6 +329,7 @@ void authenticateUser(Packet *packet)
             Packet *acceptPacket = (Packet *)malloc(sizeof(Packet));
             acceptPacket->type = AuthenticationAccepted;
             acceptPacket->length = 0;
+            acceptPacket->data = NULL;
             acceptPacket->client = packet->client;
             sendPacket(acceptPacket);
             packet->client->authenticated = TRUE;
