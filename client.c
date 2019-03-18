@@ -31,7 +31,8 @@ enum PacketTypes
     AuthenticationDenied,
     BroadcastMessage,
     UserAlreadyLoggedIn,
-    UserJoined
+    UserJoined,
+    UserLeftSession
 };
 
 typedef struct _Packet
@@ -175,6 +176,10 @@ void recvData()
                 break;
             case UserJoined:
                 packet->type = UserJoined;
+                break;
+            case UserLeftSession:
+                packet->type = UserLeftSession;
+                break;
             default:
                 break;
             }
@@ -188,6 +193,10 @@ void recvData()
     else if (packet->type == UserJoined)
     {
         printf("\b\b[%s] %s has connected !\n", currentTime(), packet->data);
+    }
+    else if (packet->type == UserLeftSession)
+    {
+        printf("\b\b[%s] %s has left the session !\n", currentTime(), packet->data);
     }
 }
 

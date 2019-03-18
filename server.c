@@ -30,7 +30,8 @@ enum PacketTypes
     AuthenticationDenied,
     BroadcastMessage,
     UserAlreadyLoggedIn,
-    UserJoined
+    UserJoined,
+    UserLeftSession
 };
 
 typedef struct _Client
@@ -66,6 +67,7 @@ int serverPort = SERVER_PORT;
 void broadcastMessage(Packet *packet);
 void processPacket(Packet *packet);
 void notifyJoined(Client *client);
+void notifyLeaving(Client *client);
 
 void err(const char *fmt, ...)
 {
@@ -227,6 +229,7 @@ void closeConnection(Client *client)
     if (client->authenticated)
     {
         printf("[%s] User %s has closed the connection \n", currentTime(), client->name);
+        notifyLeaving(client);
         fflush(stdout);
     }
     if (client->socket == max_sd)
@@ -369,6 +372,33 @@ void notifyJoined(Client *client)
         p->type = UserJoined;
         p->data = (char *)malloc(strlen(client->name));
         memcpy(p->data, client->name, strlen(client->name));
+        p->data[strlen(client->name)] = 0;
+        p->client = c;
+        p->length = strlen(client->name);
+        sendPacket(p);
+        free(p->data);
+        free(p);
+        c = c->next;
+    }
+}
+
+void notifyLeaving(Client *client)
+{
+    Client *c = clients;
+
+    while (c != NULL)
+    {
+        if (c == client)
+        {
+            c = c->next;
+            continue;
+        }
+
+        Packet *p = (Packet *)malloc(sizeof(Packet));
+        p->type = UserLeftSession;
+        p->data = (char *)malloc(strlen(client->name));
+        memcpy(p->data, client->name, strlen(client->name));
+        p->data[strlen(client->name)] = 0;
         p->client = c;
         p->length = strlen(client->name);
         sendPacket(p);
