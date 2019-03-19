@@ -240,12 +240,15 @@ void setupIpAndPort()
     size_t size = 256;
     char *line = (char *)malloc(size);
     serverIp = (char *)malloc(17);
-    serverIp = SERVER_IP;
     printf("Ip (default 127.0.0.1): ");
     getline(&line, &size, stdin);
     if (strlen(line) > 1)
     {
-        serverIp = line;
+        memcpy(serverIp, line, strlen(line) - 1);
+    }
+    else
+    {
+        serverIp = SERVER_IP;
     }
     printf("Port (default 12345): ");
     getline(&line, &size, stdin);
