@@ -234,7 +234,7 @@ void closeConnection(Client *client)
     }
     if (client->socket == max_sd)
     {
-        while (FD_ISSET(max_sd, &socks) == FALSE)
+        while (FD_ISSET(max_sd, &socks) == FALSE && max_sd > 1)
             max_sd -= 1;
     }
     if (client == clients)
